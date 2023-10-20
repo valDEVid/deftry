@@ -6,7 +6,7 @@
 ### Install
 Start cloning the repository in your workfolder
 
-```
+```powershell
 git clone https://github.com/valDEVid/deftry
 ```
 
@@ -14,7 +14,7 @@ git clone https://github.com/valDEVid/deftry
 Once you get it, `cd` to the directory
 
 And run it
-```
+```powershell
 python3 deftry.py
 ```
 
@@ -22,7 +22,7 @@ python3 deftry.py
 ### Usage
 
 You can actually see the help pannel by launch `-h` flag
-```
+```powershell
 python3 deftry.py -h
 ```
 `--help` will work also 
@@ -30,7 +30,7 @@ python3 deftry.py -h
 <br></br>
 URL is the obligated flag (`-u`), but you have a few more to run the script 
 
-```
+```powershell
 Default Credentials Checker
 
 options:
@@ -41,6 +41,12 @@ options:
   -pw [/usr/share/example]
                         Password Wordlist (Must be a list with value per line)
   -nc                   No errors checks to compare
+```
+
+For now, if the victim web has differents endpoints of the form and the login, for example, a index.php with a login form that is sent to login.php you must set the html as the -u flag and the login as `-p login.php`
+
+```powershell
+python3 deftry.py -u https://example.com -p login.php
 ```
 
 ### Clarifications
