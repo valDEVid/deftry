@@ -68,3 +68,4 @@ signin
 cuenta
 usuario
 identificador
+tpass
