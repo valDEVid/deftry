@@ -4,7 +4,7 @@
 ## Docs
 
 ### Install
-Start cloning trhe repository in your workfolder
+Start cloning the repository in your workfolder
 
 ```
 git clone https://github.com/valDEVid/deftry
@@ -52,5 +52,6 @@ Thanks for read.
 
 #### Near updates
 
-Actually trying to make the tool abe to work with threads with customizable ammount.
+* Actually trying to make the tool abe to work with threads with customizable ammount.
+* It has an output issue with windows. Only for Linux systems for now
 

