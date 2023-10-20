@@ -5,8 +5,8 @@ import re
 import argparse
 import signal
 import sys
-from pwn import *
 from replit import clear
+from pwn import *
 
 
 # Global Variables
@@ -23,6 +23,7 @@ class fg:
     RESET   = '\033[39m'
 
 oneliner = "                                         \r"
+
 
 # Tool
 
@@ -192,6 +193,8 @@ def brute_force(usr_field, pass_field, url, usrdic, passdic, errors):
                     continue
         if check == True:
             break
+
+
 def main():
     # Print Headers and read flags
     print(f"\n{fg.MAGENTA}[*] Welcome to deftry{fg.RESET}")
