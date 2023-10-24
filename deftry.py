@@ -78,17 +78,6 @@ def read_dict(dic):
 
 
 # Field manager
-def match_field(field, dic):
-    dict = read_dict(dic)
-    for i in field:
-        for n in dict:
-            if i == n:
-                matched_field = i
-            else:
-                continue
-    return matched_field
-
-
 def choice(field):
     while True:
         try:
@@ -114,7 +103,7 @@ def no_empty(field):
     return fields
 
 
-def get_fields(args, usr, pwd):
+def get_fields(args):
     p1 = log.progress(f'{fg.YELLOW}Searching login fields{fg.RESET}')
     url = args.url
     login = conn(url, "get")
@@ -140,11 +129,6 @@ def get_fields(args, usr, pwd):
         p1.status(f"{fg.RED}{usr_field}{fg.RESET}{fg.YELLOW}:{fg.RESET}{fg.RED}{pass_field}{fg.RESET}")
         for i in range(listlen, -1, -1):
             sys.stdout.write("\033[F")
-    else:
-        if usr_field == None:
-            usr_field = match_field(usr_field, usr)
-        elif pass_field == None:
-            pass_field = match_field(pass_field, pwd)
     if usr_field == None or pass_field == None:
         print(f"\n\n\n{fg.RED}[!] Cant find any good login field, sorry...\n{fg.RESET}"); exit(1)
     usr_field = re.findall(r".*?=\"(.*?)\"", usr_field)
@@ -204,8 +188,6 @@ def main():
     # Prepare dictionaries
     usrdic = abspath("wordlists/usr.txt")
     passdic = abspath("wordlists/pass.txt")
-    usrfielddic = abspath("wordlists/usermatch.txt")
-    passfielddic = abspath("wordlists/usermatch.txt")
     if args.inputuserdic:
         usrdic = args.inputuserdic
     elif args.inputpassdic:
@@ -213,12 +195,12 @@ def main():
     
     # Get the correct fields
     if args.post:
-        usr_field, pass_field = get_fields(args, usrfielddic, passfielddic)
+        usr_field, pass_field = get_fields(args)
         if not "/" in args.post:
             args.post = "/" + args.post
         args.url = args.url + args.post
     else:
-        usr_field, pass_field = get_fields(args, usrfielddic, passfielddic)
+        usr_field, pass_field = get_fields(args)
     if not args.nocheck:  # This is if user dont want to check the response for autodetect a correct input
         error_payload = make_payload(usr_field, pass_field)
         err_response = conn(args.url, "post", error_payload)
